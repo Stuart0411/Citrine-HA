@@ -8,7 +8,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .api import CitrineBridgeApiClient
+from .api import CitrineApiClient
 from .const import DOMAIN
 from .coordinator import CitrineCoordinator
 
@@ -19,7 +19,7 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator: CitrineCoordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
-    client: CitrineBridgeApiClient = hass.data[DOMAIN][entry.entry_id]["client"]
+    client: CitrineApiClient = hass.data[DOMAIN][entry.entry_id]["client"]
 
     known_station_ids: set[str] = set()
 
@@ -66,7 +66,7 @@ class CitrineStationActionButton(CoordinatorEntity[CitrineCoordinator], ButtonEn
         self,
         entry_id: str,
         coordinator: CitrineCoordinator,
-        client: CitrineBridgeApiClient,
+        client: CitrineApiClient,
         station_id: str,
     ) -> None:
         super().__init__(coordinator)
@@ -88,7 +88,7 @@ class CitrineRemoteStartButton(CitrineStationActionButton):
         self,
         entry_id: str,
         coordinator: CitrineCoordinator,
-        client: CitrineBridgeApiClient,
+        client: CitrineApiClient,
         station_id: str,
     ) -> None:
         super().__init__(entry_id, coordinator, client, station_id)
@@ -112,7 +112,7 @@ class CitrineSetOperativeButton(CitrineStationActionButton):
         self,
         entry_id: str,
         coordinator: CitrineCoordinator,
-        client: CitrineBridgeApiClient,
+        client: CitrineApiClient,
         station_id: str,
     ) -> None:
         super().__init__(entry_id, coordinator, client, station_id)
@@ -135,7 +135,7 @@ class CitrineSetInoperativeButton(CitrineStationActionButton):
         self,
         entry_id: str,
         coordinator: CitrineCoordinator,
-        client: CitrineBridgeApiClient,
+        client: CitrineApiClient,
         station_id: str,
     ) -> None:
         super().__init__(entry_id, coordinator, client, station_id)

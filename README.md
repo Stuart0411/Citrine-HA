@@ -221,10 +221,19 @@ Install steps:
 2. Install `CitrineOS Load Management` from HACS.
 3. Restart Home Assistant.
 4. Add integration: `Settings -> Devices & Services -> Add Integration -> CitrineOS Load Management`.
-5. Configure:
-   - Bridge URL (for example, `http://YOUR_BRIDGE_HOST:8095`)
-   - Webhook shared secret (same value as bridge `WEBHOOK_SHARED_SECRET`)
-   - Poll interval
+5. Select mode:
+  - `Direct` (recommended): Home Assistant talks to CitrineOS directly and runs policy handling internally.
+  - `Bridge`: Home Assistant calls this repository's Node bridge service.
+6. Configure selected mode:
+  - Direct mode:
+    - CitrineOS base URL (for example, `http://YOUR_CITRINEOS_HOST:8080`)
+    - Optional station inventory URL (defaults to `/api/v1/charging-stations`)
+    - OCPP module prefixes and station defaults
+    - Poll interval
+  - Bridge mode:
+    - Bridge URL (for example, `http://YOUR_BRIDGE_HOST:8095`)
+    - Webhook shared secret (same value as bridge `WEBHOOK_SHARED_SECRET`)
+    - Poll interval
 
 What it provides:
 

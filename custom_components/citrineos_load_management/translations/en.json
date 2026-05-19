@@ -2,17 +2,39 @@
   "config": {
     "step": {
       "user": {
-        "title": "Connect to CitrineOS Load Management Bridge",
+        "title": "Select Integration Mode",
+        "description": "Choose whether Home Assistant uses a bridge service or connects to CitrineOS directly.",
+        "data": {
+          "mode": "Mode"
+        }
+      },
+      "bridge": {
+        "title": "Connect to Bridge",
         "description": "Provide bridge URL and shared secret.",
         "data": {
           "bridge_url": "Bridge URL",
           "shared_secret": "Webhook shared secret",
           "poll_seconds": "Poll interval (seconds)"
         }
+      },
+      "direct": {
+        "title": "Connect to CitrineOS Directly",
+        "description": "Configure direct CitrineOS connection and station defaults.",
+        "data": {
+          "citrineos_base_url": "CitrineOS base URL",
+          "citrineos_stations_url": "Station inventory URL (optional)",
+          "citrineos_ocpp2_prefix": "OCPP 2.0.1 API prefix",
+          "citrineos_ocpp16_prefix": "OCPP 1.6 API prefix",
+          "station_default_tenant_id": "Default tenant id",
+          "station_default_protocol": "Default protocol",
+          "station_default_max_watts": "Default station max watts",
+          "station_default_weight": "Default station weight",
+          "poll_seconds": "Poll interval (seconds)"
+        }
       }
     },
     "error": {
-      "cannot_connect": "Failed to connect to the bridge.",
+      "cannot_connect": "Failed to connect to the selected endpoint.",
       "unknown": "Unexpected error. Check logs."
     }
   },
@@ -23,7 +45,15 @@
         "data": {
           "bridge_url": "Bridge URL",
           "shared_secret": "Webhook shared secret",
-          "poll_seconds": "Poll interval (seconds)"
+          "poll_seconds": "Poll interval (seconds)",
+          "citrineos_base_url": "CitrineOS base URL",
+          "citrineos_stations_url": "Station inventory URL (optional)",
+          "citrineos_ocpp2_prefix": "OCPP 2.0.1 API prefix",
+          "citrineos_ocpp16_prefix": "OCPP 1.6 API prefix",
+          "station_default_tenant_id": "Default tenant id",
+          "station_default_protocol": "Default protocol",
+          "station_default_max_watts": "Default station max watts",
+          "station_default_weight": "Default station weight"
         }
       }
     }

@@ -5,8 +5,30 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .api import CitrineBridgeApiClient
-from .const import CONF_BRIDGE_URL, CONF_POLL_SECONDS, CONF_SHARED_SECRET, DOMAIN
+from .api import CitrineBridgeApiClient, CitrineDirectApiClient
+from .const import (
+    CONF_BRIDGE_URL,
+    CONF_CITRINEOS_BASE_URL,
+    CONF_CITRINEOS_OCPP16_PREFIX,
+    CONF_CITRINEOS_OCPP2_PREFIX,
+    CONF_CITRINEOS_STATIONS_URL,
+    CONF_MODE,
+    CONF_POLL_SECONDS,
+    CONF_SHARED_SECRET,
+    CONF_STATION_DEFAULT_MAX_WATTS,
+    CONF_STATION_DEFAULT_PROTOCOL,
+    CONF_STATION_DEFAULT_TENANT_ID,
+    CONF_STATION_DEFAULT_WEIGHT,
+    DEFAULT_CITRINEOS_OCPP16_PREFIX,
+    DEFAULT_CITRINEOS_OCPP2_PREFIX,
+    DEFAULT_STATION_DEFAULT_MAX_WATTS,
+    DEFAULT_STATION_DEFAULT_PROTOCOL,
+    DEFAULT_STATION_DEFAULT_TENANT_ID,
+    DEFAULT_STATION_DEFAULT_WEIGHT,
+    DOMAIN,
+    MODE_BRIDGE,
+    MODE_DIRECT,
+)
 from .coordinator import CitrineCoordinator
 from .services import async_register_services, async_unregister_services
 
@@ -16,11 +38,48 @@ PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BUTTON]
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
 
-    bridge_url = entry.options.get(CONF_BRIDGE_URL, entry.data[CONF_BRIDGE_URL])
-    shared_secret = entry.options.get(CONF_SHARED_SECRET, entry.data[CONF_SHARED_SECRET])
+    mode = entry.options.get(CONF_MODE, entry.data.get(CONF_MODE, MODE_BRIDGE))
     poll_seconds = entry.options.get(CONF_POLL_SECONDS, entry.data.get(CONF_POLL_SECONDS, 30))
+    session = async_get_clientsession(hass)
 
-    client = CitrineBridgeApiClient(async_get_clientsession(hass), bridge_url, shared_secret)
+    if mode == MODE_DIRECT:
+        client = CitrineDirectApiClient(
+            session,
+            entry.options.get(CONF_CITRINEOS_BASE_URL, entry.data[CONF_CITRINEOS_BASE_URL]),
+            stations_url=entry.options.get(
+                CONF_CITRINEOS_STATIONS_URL,
+                entry.data.get(CONF_CITRINEOS_STATIONS_URL),
+            ),
+            ocpp2_prefix=entry.options.get(
+                CONF_CITRINEOS_OCPP2_PREFIX,
+                entry.data.get(CONF_CITRINEOS_OCPP2_PREFIX, DEFAULT_CITRINEOS_OCPP2_PREFIX),
+            ),
+            ocpp16_prefix=entry.options.get(
+                CONF_CITRINEOS_OCPP16_PREFIX,
+                entry.data.get(CONF_CITRINEOS_OCPP16_PREFIX, DEFAULT_CITRINEOS_OCPP16_PREFIX),
+            ),
+            station_default_tenant_id=entry.options.get(
+                CONF_STATION_DEFAULT_TENANT_ID,
+                entry.data.get(CONF_STATION_DEFAULT_TENANT_ID, DEFAULT_STATION_DEFAULT_TENANT_ID),
+            ),
+            station_default_protocol=entry.options.get(
+                CONF_STATION_DEFAULT_PROTOCOL,
+                entry.data.get(CONF_STATION_DEFAULT_PROTOCOL, DEFAULT_STATION_DEFAULT_PROTOCOL),
+            ),
+            station_default_max_watts=entry.options.get(
+                CONF_STATION_DEFAULT_MAX_WATTS,
+                entry.data.get(CONF_STATION_DEFAULT_MAX_WATTS, DEFAULT_STATION_DEFAULT_MAX_WATTS),
+            ),
+            station_default_weight=entry.options.get(
+                CONF_STATION_DEFAULT_WEIGHT,
+                entry.data.get(CONF_STATION_DEFAULT_WEIGHT, DEFAULT_STATION_DEFAULT_WEIGHT),
+            ),
+        )
+    else:
+        bridge_url = entry.options.get(CONF_BRIDGE_URL, entry.data[CONF_BRIDGE_URL])
+        shared_secret = entry.options.get(CONF_SHARED_SECRET, entry.data[CONF_SHARED_SECRET])
+        client = CitrineBridgeApiClient(session, bridge_url, shared_secret)
+
     coordinator = CitrineCoordinator(hass, client, poll_seconds)
     await coordinator.async_config_entry_first_refresh()
 

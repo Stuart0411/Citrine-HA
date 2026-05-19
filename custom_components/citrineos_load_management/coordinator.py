@@ -7,7 +7,7 @@ from typing import Any
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .api import CitrineApiError, CitrineBridgeApiClient
+from .api import CitrineApiClient, CitrineApiError
 from .const import DEFAULT_POLL_SECONDS
 
 _LOGGER = logging.getLogger(__name__)
@@ -17,7 +17,7 @@ class CitrineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     def __init__(
         self,
         hass: HomeAssistant,
-        client: CitrineBridgeApiClient,
+        client: CitrineApiClient,
         poll_seconds: int = DEFAULT_POLL_SECONDS,
     ) -> None:
         super().__init__(
