@@ -159,7 +159,8 @@ remote_stop_transaction:
         text:
     transaction_id:
       name: Transaction ID
-      required: true
+      required: false
+      description: Optional. When omitted, the latest auto-incremented transaction id for the station is used.
       selector:
         text:
 

@@ -40,9 +40,33 @@
     }
   },
   "options": {
+    "error": {
+      "duplicate_station_id": "A charger with this station id already exists.",
+      "duplicate_group_id": "A group with this group id already exists.",
+      "unknown_station_id": "One or more station ids do not exist in configured chargers."
+    },
+    "abort": {
+      "no_chargers": "No chargers are configured yet.",
+      "charger_not_found": "Selected charger was not found.",
+      "no_groups": "No groups are configured yet.",
+      "group_not_found": "Selected group was not found."
+    },
     "step": {
       "init": {
-        "title": "CitrineOS Load Management Options",
+        "title": "CitrineOS Load Management",
+        "menu_options": {
+          "connection_settings": "Connection settings",
+          "add_charger": "Add charger",
+          "edit_charger_select": "Edit charger",
+          "delete_charger": "Delete charger",
+          "add_group": "Add group",
+          "edit_group_select": "Edit group",
+          "delete_group": "Delete group",
+          "save": "Save and close"
+        }
+      },
+      "connection_settings": {
+        "title": "Connection Settings",
         "data": {
           "bridge_url": "Bridge URL",
           "shared_secret": "Webhook shared secret",
@@ -56,6 +80,72 @@
           "station_default_protocol": "Default protocol",
           "station_default_max_watts": "Default station max watts",
           "station_default_weight": "Default station weight"
+        }
+      },
+      "add_charger": {
+        "title": "Add Charger",
+        "data": {
+          "station_id": "Station ID",
+          "protocol": "Protocol",
+          "tenant_id": "Tenant ID",
+          "max_watts": "Max watts",
+          "weight": "Weight",
+          "evse_id": "EVSE ID (optional)",
+          "connector_id": "Connector ID (optional)",
+          "group_ids": "Group IDs (comma-separated, optional)"
+        }
+      },
+      "edit_charger_select": {
+        "title": "Select Charger",
+        "data": {
+          "station_id": "Station ID"
+        }
+      },
+      "edit_charger": {
+        "title": "Edit Charger",
+        "data": {
+          "station_id": "Station ID",
+          "protocol": "Protocol",
+          "tenant_id": "Tenant ID",
+          "max_watts": "Max watts",
+          "weight": "Weight",
+          "evse_id": "EVSE ID (optional)",
+          "connector_id": "Connector ID (optional)",
+          "group_ids": "Group IDs (comma-separated, optional)"
+        }
+      },
+      "delete_charger": {
+        "title": "Delete Charger",
+        "data": {
+          "station_id": "Station ID"
+        }
+      },
+      "add_group": {
+        "title": "Add Group",
+        "data": {
+          "group_id": "Group ID",
+          "station_ids": "Station IDs (comma-separated)",
+          "max_watts": "Max watts (optional)"
+        }
+      },
+      "edit_group_select": {
+        "title": "Select Group",
+        "data": {
+          "group_id": "Group ID"
+        }
+      },
+      "edit_group": {
+        "title": "Edit Group",
+        "data": {
+          "group_id": "Group ID",
+          "station_ids": "Station IDs (comma-separated)",
+          "max_watts": "Max watts (optional)"
+        }
+      },
+      "delete_group": {
+        "title": "Delete Group",
+        "data": {
+          "group_id": "Group ID"
         }
       }
     }

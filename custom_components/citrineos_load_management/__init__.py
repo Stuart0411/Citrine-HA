@@ -10,10 +10,12 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from .api import CitrineBridgeApiClient, CitrineDirectApiClient
 from .const import (
     CONF_BRIDGE_URL,
+    CONF_CHARGERS,
     CONF_CITRINEOS_BASE_URL,
     CONF_CITRINEOS_OCPP16_PREFIX,
     CONF_CITRINEOS_OCPP2_PREFIX,
     CONF_CITRINEOS_STATIONS_URL,
+    CONF_GROUPS,
     CONF_MANUAL_STATIONS_JSON,
     CONF_MODE,
     CONF_POLL_SECONDS,
@@ -83,6 +85,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 CONF_STATION_DEFAULT_WEIGHT,
                 entry.data.get(CONF_STATION_DEFAULT_WEIGHT, DEFAULT_STATION_DEFAULT_WEIGHT),
             ),
+            configured_stations=entry.options.get(CONF_CHARGERS, []),
+            configured_groups=entry.options.get(CONF_GROUPS, []),
         )
     else:
         bridge_url = entry.options.get(CONF_BRIDGE_URL, entry.data[CONF_BRIDGE_URL])

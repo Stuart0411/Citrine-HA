@@ -68,7 +68,7 @@ REMOTE_STOP_SCHEMA = vol.Schema(
     {
         vol.Optional(ATTR_CONFIG_ENTRY_ID): cv.string,
         vol.Required("station_id"): cv.string,
-        vol.Required("transaction_id"): vol.Any(cv.string, vol.All(vol.Coerce(int), vol.Range(min=0))),
+        vol.Optional("transaction_id"): vol.Any(cv.string, vol.All(vol.Coerce(int), vol.Range(min=0))),
     }
 )
 
@@ -237,10 +237,12 @@ async def async_register_services(hass: HomeAssistant) -> None:
         if "remote_start_id" in service_call.data:
             payload["remoteStartId"] = service_call.data["remote_start_id"]
 
-        await client.post_remote_start(payload)
+        result = await client.post_remote_start(payload)
+        transaction_id = result.get("transactionId") if isinstance(result, dict) else None
         _LOGGER.info(
-            "Remote start dispatched for station %s (entry %s)",
+            "Remote start dispatched for station %s transaction_id=%s (entry %s)",
             payload["stationId"],
+            transaction_id,
             entry.entry_id,
         )
         await hass.data[DOMAIN][entry.entry_id]["coordinator"].async_request_refresh()
@@ -249,15 +251,18 @@ async def async_register_services(hass: HomeAssistant) -> None:
         entry = _resolve_entry(hass, service_call)
         client = hass.data[DOMAIN][entry.entry_id]["client"]
 
-        payload = {
+        payload: dict[str, Any] = {
             "stationId": service_call.data["station_id"],
-            "transactionId": service_call.data["transaction_id"],
         }
+        if "transaction_id" in service_call.data:
+            payload["transactionId"] = service_call.data["transaction_id"]
 
-        await client.post_remote_stop(payload)
+        result = await client.post_remote_stop(payload)
+        transaction_id = result.get("transactionId") if isinstance(result, dict) else payload.get("transactionId")
         _LOGGER.info(
-            "Remote stop dispatched for station %s (entry %s)",
+            "Remote stop dispatched for station %s transaction_id=%s (entry %s)",
             payload["stationId"],
+            transaction_id,
             entry.entry_id,
         )
         await hass.data[DOMAIN][entry.entry_id]["coordinator"].async_request_refresh()

@@ -173,6 +173,12 @@ Body:
 }
 ```
 
+Behavior:
+
+- The integration now auto-generates an incrementing transaction id each time remote start is called.
+- For OCPP 2.0.1, this value is also used as `remoteStartId` when not explicitly provided.
+- The generated `transactionId` is returned in the API response and can be used for remote stop.
+
 ### Remote stop transaction
 
 - `POST /api/v1/operations/remote-stop`
@@ -186,6 +192,8 @@ Body:
   "transactionId": "12345"
 }
 ```
+
+`transactionId` is optional. If omitted, the most recently auto-generated transaction id for the station is used.
 
 ### Set charger availability
 
@@ -250,6 +258,24 @@ What it provides:
   - `citrineos_load_management.remote_stop_transaction`
   - `citrineos_load_management.set_availability`
   - `citrineos_load_management.reconcile`
+
+## Phase 1: Home Assistant-first configuration UI
+
+The integration options flow now includes a native management menu focused on Home Assistant as the primary control surface:
+
+- `Connection settings`
+- `Add charger`
+- `Edit charger`
+- `Delete charger`
+- `Add group`
+- `Edit group`
+- `Delete group`
+- `Save and close`
+
+Charger fields include station id, protocol, tenant id, max watts, weight, and optional EVSE/connector ids.
+Group fields include group id, member station ids, and optional max watts.
+
+For direct mode, configured chargers/groups are used as the primary station inventory source before manual JSON/discovery routes.
 
 Service notes:
 

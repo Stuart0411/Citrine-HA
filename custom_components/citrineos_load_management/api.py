@@ -184,6 +184,8 @@ class CitrineDirectApiClient(CitrineApiClient):
         station_default_protocol: str = DEFAULT_STATION_DEFAULT_PROTOCOL,
         station_default_max_watts: int = DEFAULT_STATION_DEFAULT_MAX_WATTS,
         station_default_weight: int = DEFAULT_STATION_DEFAULT_WEIGHT,
+        configured_stations: list[dict[str, Any]] | None = None,
+        configured_groups: list[dict[str, Any]] | None = None,
     ) -> None:
         self._session = session
         self._base_url = citrineos_base_url.rstrip("/")
@@ -196,6 +198,8 @@ class CitrineDirectApiClient(CitrineApiClient):
         self._station_default_max_watts = station_default_max_watts
         self._station_default_weight = station_default_weight
         self._manual_stations_json = manual_stations_json
+        self._configured_stations = configured_stations or []
+        self._configured_groups = configured_groups or []
         self._stations_cache: list[dict[str, Any]] = []
         self._state: dict[str, Any] = {
             "runtime": {
@@ -203,6 +207,10 @@ class CitrineDirectApiClient(CitrineApiClient):
                 "fallbackActive": False,
             },
             "outbox": [],
+            "transactions": {
+                "nextTransactionId": 1,
+                "stationLastTransactionId": {},
+            },
         }
 
     async def get_health(self) -> dict[str, Any]:
@@ -210,6 +218,12 @@ class CitrineDirectApiClient(CitrineApiClient):
         return {"status": "ok", "mode": "direct"}
 
     async def get_stations(self) -> list[dict[str, Any]]:
+        configured_stations = self._build_stations_from_config()
+        if configured_stations:
+            self._stations_cache = configured_stations
+            _LOGGER.info("Direct mode using %s chargers from integration configuration", len(configured_stations))
+            return configured_stations
+
         manual_stations = self._parse_manual_stations()
         if manual_stations:
             self._stations_cache = manual_stations
@@ -268,6 +282,65 @@ class CitrineDirectApiClient(CitrineApiClient):
             )
 
         return stations
+
+    def _build_stations_from_config(self) -> list[dict[str, Any]]:
+        if not isinstance(self._configured_stations, list) or len(self._configured_stations) == 0:
+            return []
+
+        group_memberships: dict[str, list[str]] = {}
+        if isinstance(self._configured_groups, list):
+            for group in self._configured_groups:
+                if not isinstance(group, dict):
+                    continue
+                group_id = group.get("groupId")
+                station_ids = group.get("stationIds")
+                if not isinstance(group_id, str) or group_id == "":
+                    continue
+                if not isinstance(station_ids, list):
+                    continue
+                for station_id in station_ids:
+                    if not isinstance(station_id, str) or station_id == "":
+                        continue
+                    memberships = group_memberships.setdefault(station_id, [])
+                    if group_id not in memberships:
+                        memberships.append(group_id)
+
+        normalized: list[dict[str, Any]] = []
+        for station in self._configured_stations:
+            if not isinstance(station, dict):
+                continue
+
+            station_id = station.get("stationId")
+            if not isinstance(station_id, str) or station_id == "":
+                continue
+
+            protocol = self._parse_protocol(station.get("protocol")) or self._station_default_protocol
+            tenant_id = station.get("tenantId", self._station_default_tenant_id)
+            max_watts = station.get("maxWatts", self._station_default_max_watts)
+            weight = station.get("weight", self._station_default_weight)
+
+            group_ids = station.get("groupIds") if isinstance(station.get("groupIds"), list) else []
+            for group_id in group_memberships.get(station_id, []):
+                if group_id not in group_ids:
+                    group_ids.append(group_id)
+
+            evse_id = station.get("evseId")
+            connector_id = station.get("connectorId")
+
+            normalized.append(
+                {
+                    "stationId": station_id,
+                    "protocol": protocol,
+                    "tenantId": int(tenant_id),
+                    "maxWatts": int(max_watts),
+                    "weight": int(weight),
+                    "groupIds": [str(group) for group in group_ids],
+                    "evseId": int(evse_id) if isinstance(evse_id, (int, float)) else None,
+                    "connectorId": int(connector_id) if isinstance(connector_id, (int, float)) else None,
+                }
+            )
+
+        return normalized
 
     def _station_discovery_candidates(self) -> list[str]:
         if self._user_stations_url:
@@ -337,10 +410,11 @@ class CitrineDirectApiClient(CitrineApiClient):
         protocol = station["protocol"]
         station_id = station["stationId"]
         tenant_id = int(station["tenantId"])
+        transaction_id = self._allocate_transaction_id(station_id)
 
         if protocol == "2.0.1":
             request_payload: dict[str, Any] = {
-                "remoteStartId": payload.get("remoteStartId") or int(datetime.now(UTC).timestamp()),
+                "remoteStartId": payload.get("remoteStartId") or transaction_id,
                 "idToken": {
                     "idToken": payload["idToken"],
                     "type": "Central",
@@ -373,6 +447,7 @@ class CitrineDirectApiClient(CitrineApiClient):
             "message": "Remote start request dispatched.",
             "stationId": station_id,
             "protocol": protocol,
+            "transactionId": transaction_id,
             "status": result["status"],
             "body": result["body"],
         }
@@ -383,6 +458,8 @@ class CitrineDirectApiClient(CitrineApiClient):
         station_id = station["stationId"]
         tenant_id = int(station["tenantId"])
         transaction_id = payload.get("transactionId")
+        if transaction_id in (None, ""):
+            transaction_id = self._latest_transaction_id(station_id)
 
         if protocol == "2.0.1":
             request_payload = {"transactionId": str(transaction_id)}
@@ -408,9 +485,28 @@ class CitrineDirectApiClient(CitrineApiClient):
             "message": "Remote stop request dispatched.",
             "stationId": station_id,
             "protocol": protocol,
+            "transactionId": transaction_id,
             "status": result["status"],
             "body": result["body"],
         }
+
+    def _allocate_transaction_id(self, station_id: str) -> int:
+        transactions = self._state.setdefault("transactions", {})
+        next_id = int(transactions.get("nextTransactionId", 1))
+        station_last = transactions.setdefault("stationLastTransactionId", {})
+        station_last[station_id] = next_id
+        transactions["nextTransactionId"] = next_id + 1
+        return next_id
+
+    def _latest_transaction_id(self, station_id: str) -> int:
+        transactions = self._state.setdefault("transactions", {})
+        station_last = transactions.setdefault("stationLastTransactionId", {})
+        latest = station_last.get(station_id)
+        if latest is None:
+            raise CitrineApiError(
+                f"No known transaction id for station {station_id}. Start a transaction first or provide transactionId explicitly."
+            )
+        return int(latest)
 
     async def post_set_availability(self, payload: dict[str, Any]) -> dict[str, Any]:
         station = await self._find_station(payload.get("stationId"))

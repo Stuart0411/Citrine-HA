@@ -63,7 +63,7 @@ const remoteStartSchema = z.object({
 
 const remoteStopSchema = z.object({
   stationId: z.string().min(1),
-  transactionId: z.union([z.string().min(1), z.number().int().min(0)]),
+  transactionId: z.union([z.string().min(1), z.number().int().min(0)]).optional(),
 });
 
 const setAvailabilitySchema = z.object({
@@ -72,6 +72,20 @@ const setAvailabilitySchema = z.object({
   evseId: z.number().int().min(0).optional(),
   connectorId: z.number().int().min(0).optional(),
 });
+
+let nextTransactionId = 1;
+const stationLastTransactionId = new Map<string, number>();
+
+function allocateTransactionId(stationId: string): number {
+  const transactionId = nextTransactionId;
+  nextTransactionId += 1;
+  stationLastTransactionId.set(stationId, transactionId);
+  return transactionId;
+}
+
+function getLatestTransactionId(stationId: string): number | undefined {
+  return stationLastTransactionId.get(stationId);
+}
 
 function rejectUnauthorized(request: Request, response: Response, sharedSecret: string): boolean {
   const provided = request.header('x-shared-secret');
@@ -164,12 +178,20 @@ export function registerRoutes(
       return;
     }
 
+    const transactionId = allocateTransactionId(station.stationId);
+    const remoteStartRequest = {
+      ...parsed.data,
+      remoteStartId: parsed.data.remoteStartId ?? transactionId,
+    };
+
     try {
-      const result = await citrineClient.sendRemoteStartTransaction(station, parsed.data);
+      const result = await citrineClient.sendRemoteStartTransaction(station, remoteStartRequest);
       response.status(result.ok ? 202 : 502).json({
         message: result.ok ? 'Remote start request dispatched.' : 'Remote start dispatch rejected by CitrineOS.',
         stationId: station.stationId,
         protocol: station.protocol,
+        transactionId,
+        remoteStartId: remoteStartRequest.remoteStartId,
         status: result.status,
         body: result.body,
       });
@@ -197,12 +219,21 @@ export function registerRoutes(
       return;
     }
 
+    const transactionId = parsed.data.transactionId ?? getLatestTransactionId(station.stationId);
+    if (transactionId === undefined) {
+      response.status(400).json({
+        error: `No known transaction id for station ${station.stationId}. Start a session first or provide transactionId.`,
+      });
+      return;
+    }
+
     try {
-      const result = await citrineClient.sendRemoteStopTransaction(station, parsed.data);
+      const result = await citrineClient.sendRemoteStopTransaction(station, { transactionId });
       response.status(result.ok ? 202 : 502).json({
         message: result.ok ? 'Remote stop request dispatched.' : 'Remote stop dispatch rejected by CitrineOS.',
         stationId: station.stationId,
         protocol: station.protocol,
+        transactionId,
         status: result.status,
         body: result.body,
       });
