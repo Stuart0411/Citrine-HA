@@ -33,7 +33,10 @@ class CitrineCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             stations = await self.client.get_stations()
             state = await self.client.get_state()
         except CitrineApiError as err:
+            _LOGGER.warning("Coordinator refresh failed: %s", err)
             raise UpdateFailed(str(err)) from err
+
+        _LOGGER.debug("Coordinator refresh succeeded with %s stations", len(stations))
 
         return {
             "stations": stations,

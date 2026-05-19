@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+import logging
 from typing import Any
 
 import voluptuous as vol
@@ -19,6 +20,8 @@ from .const import (
     SERVICE_REMOTE_STOP_TRANSACTION,
     SERVICE_SET_AVAILABILITY,
 )
+
+_LOGGER = logging.getLogger(__name__)
 
 SITE_BUDGET_SCHEMA = vol.Schema(
     {
@@ -158,6 +161,7 @@ async def async_register_services(hass: HomeAssistant) -> None:
         }
 
         await client.post_site_budget(payload)
+        _LOGGER.info("Applied site budget policy for entry %s", entry.entry_id)
         await hass.data[DOMAIN][entry.entry_id]["coordinator"].async_request_refresh()
 
     async def handle_direct_limits(service_call: ServiceCall) -> None:
@@ -206,6 +210,7 @@ async def async_register_services(hass: HomeAssistant) -> None:
             payload["defaultUnspecifiedWatts"] = service_call.data["default_unspecified_watts"]
 
         await client.post_direct_limits(payload)
+        _LOGGER.info("Applied direct limits policy for entry %s", entry.entry_id)
         await hass.data[DOMAIN][entry.entry_id]["coordinator"].async_request_refresh()
 
     async def handle_reconcile(service_call: ServiceCall) -> None:
@@ -213,6 +218,7 @@ async def async_register_services(hass: HomeAssistant) -> None:
         client = hass.data[DOMAIN][entry.entry_id]["client"]
 
         await client.post_reconcile()
+        _LOGGER.info("Triggered reconcile for entry %s", entry.entry_id)
         await hass.data[DOMAIN][entry.entry_id]["coordinator"].async_request_refresh()
 
     async def handle_remote_start(service_call: ServiceCall) -> None:
@@ -232,6 +238,11 @@ async def async_register_services(hass: HomeAssistant) -> None:
             payload["remoteStartId"] = service_call.data["remote_start_id"]
 
         await client.post_remote_start(payload)
+        _LOGGER.info(
+            "Remote start dispatched for station %s (entry %s)",
+            payload["stationId"],
+            entry.entry_id,
+        )
         await hass.data[DOMAIN][entry.entry_id]["coordinator"].async_request_refresh()
 
     async def handle_remote_stop(service_call: ServiceCall) -> None:
@@ -244,6 +255,11 @@ async def async_register_services(hass: HomeAssistant) -> None:
         }
 
         await client.post_remote_stop(payload)
+        _LOGGER.info(
+            "Remote stop dispatched for station %s (entry %s)",
+            payload["stationId"],
+            entry.entry_id,
+        )
         await hass.data[DOMAIN][entry.entry_id]["coordinator"].async_request_refresh()
 
     async def handle_set_availability(service_call: ServiceCall) -> None:
@@ -261,6 +277,12 @@ async def async_register_services(hass: HomeAssistant) -> None:
             payload["connectorId"] = service_call.data["connector_id"]
 
         await client.post_set_availability(payload)
+        _LOGGER.info(
+            "Set availability dispatched for station %s status=%s (entry %s)",
+            payload["stationId"],
+            payload["operationalStatus"],
+            entry.entry_id,
+        )
         await hass.data[DOMAIN][entry.entry_id]["coordinator"].async_request_refresh()
 
     hass.services.async_register(

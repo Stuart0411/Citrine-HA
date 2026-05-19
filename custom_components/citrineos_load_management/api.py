@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 from datetime import UTC, datetime
+import logging
 from typing import Any
 
 from aiohttp import ClientError, ClientSession, ClientTimeout
@@ -17,6 +18,8 @@ from .const import (
     DEFAULT_STATION_DEFAULT_WEIGHT,
     DEFAULT_TIMEOUT_SECONDS,
 )
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class CitrineApiError(HomeAssistantError):
@@ -130,6 +133,8 @@ class CitrineBridgeApiClient(CitrineApiClient):
         if include_secret:
             headers["x-shared-secret"] = self._shared_secret
 
+        _LOGGER.debug("Bridge request %s %s", method, path)
+
         try:
             response = await self._session.request(
                 method,
@@ -139,10 +144,18 @@ class CitrineBridgeApiClient(CitrineApiClient):
                 json=json,
             )
         except ClientError as err:
+            _LOGGER.warning("Bridge request transport failure for %s: %s", path, err)
             raise CitrineApiError(f"Request failed for {path}: {err}") from err
 
         if response.status >= 400:
             body = await response.text()
+            _LOGGER.warning(
+                "Bridge request failed: %s %s status=%s body=%s",
+                method,
+                path,
+                response.status,
+                body,
+            )
             raise CitrineApiError(
                 f"Bridge request {method} {path} failed with status {response.status}: {body}"
             )
@@ -151,6 +164,7 @@ class CitrineBridgeApiClient(CitrineApiClient):
             return await response.json()
         except ValueError as err:
             body = await response.text()
+            _LOGGER.warning("Bridge returned non-JSON for %s %s: %s", method, path, body)
             raise CitrineApiError(
                 f"Bridge returned non-JSON response for {method} {path}: {body}"
             ) from err
@@ -197,6 +211,7 @@ class CitrineDirectApiClient(CitrineApiClient):
         payload = response.get("body", response)
         stations = self._normalize_discovered_stations(payload)
         self._stations_cache = stations
+        _LOGGER.info("Direct mode discovered %s stations from %s", len(stations), self._stations_url)
         return stations
 
     async def get_state(self) -> dict[str, Any]:
@@ -579,6 +594,13 @@ class CitrineDirectApiClient(CitrineApiClient):
             "identifier": station_id,
             "tenantId": str(tenant_id),
         }
+        _LOGGER.debug(
+            "Direct OCPP action %s version=%s station=%s tenant=%s",
+            action_path,
+            version,
+            station_id,
+            tenant_id,
+        )
         return await self._request("POST", endpoint, params=params, json_payload=payload)
 
     def _normalize_discovered_stations(self, data: Any) -> list[dict[str, Any]]:
@@ -666,6 +688,8 @@ class CitrineDirectApiClient(CitrineApiClient):
         if json_payload is not None:
             headers["content-type"] = "application/json"
 
+        _LOGGER.debug("Direct request %s %s", method, url)
+
         try:
             response = await self._session.request(
                 method,
@@ -676,10 +700,18 @@ class CitrineDirectApiClient(CitrineApiClient):
                 json=json_payload,
             )
         except ClientError as err:
+            _LOGGER.warning("Direct request transport failure for %s: %s", url, err)
             raise CitrineApiError(f"Direct request failed for {url}: {err}") from err
 
         if response.status >= 400:
             body = await response.text()
+            _LOGGER.warning(
+                "Direct request failed: %s %s status=%s body=%s",
+                method,
+                url,
+                response.status,
+                body,
+            )
             raise CitrineApiError(
                 f"Direct request {method} {url} failed with status {response.status}: {body}"
             )

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 import voluptuous as vol
@@ -32,6 +33,8 @@ from .const import (
     MODE_BRIDGE,
     MODE_DIRECT,
 )
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class CitrineConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -72,9 +75,11 @@ class CitrineConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             try:
                 await client.get_health()
                 await client.get_stations()
-            except CitrineApiError:
+            except CitrineApiError as err:
+                _LOGGER.warning("Bridge mode validation failed for %s: %s", bridge_url, err)
                 errors["base"] = "cannot_connect"
             except Exception:
+                _LOGGER.exception("Unexpected error while validating bridge mode for %s", bridge_url)
                 errors["base"] = "unknown"
             else:
                 return self.async_create_entry(
@@ -121,9 +126,11 @@ class CitrineConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             try:
                 await client.get_health()
                 await client.get_stations()
-            except CitrineApiError:
+            except CitrineApiError as err:
+                _LOGGER.warning("Direct mode validation failed for %s: %s", base_url, err)
                 errors["base"] = "cannot_connect"
             except Exception:
+                _LOGGER.exception("Unexpected error while validating direct mode for %s", base_url)
                 errors["base"] = "unknown"
             else:
                 return self.async_create_entry(

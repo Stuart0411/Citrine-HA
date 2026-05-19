@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
@@ -33,6 +35,7 @@ from .coordinator import CitrineCoordinator
 from .services import async_register_services, async_unregister_services
 
 PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BUTTON]
+_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -43,6 +46,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     session = async_get_clientsession(hass)
 
     if mode == MODE_DIRECT:
+        _LOGGER.info("Setting up CitrineOS Load Management in direct mode")
         client = CitrineDirectApiClient(
             session,
             entry.options.get(CONF_CITRINEOS_BASE_URL, entry.data[CONF_CITRINEOS_BASE_URL]),
@@ -78,10 +82,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     else:
         bridge_url = entry.options.get(CONF_BRIDGE_URL, entry.data[CONF_BRIDGE_URL])
         shared_secret = entry.options.get(CONF_SHARED_SECRET, entry.data[CONF_SHARED_SECRET])
+        _LOGGER.info("Setting up CitrineOS Load Management in bridge mode for %s", bridge_url)
         client = CitrineBridgeApiClient(session, bridge_url, shared_secret)
 
     coordinator = CitrineCoordinator(hass, client, poll_seconds)
-    await coordinator.async_config_entry_first_refresh()
+    try:
+        await coordinator.async_config_entry_first_refresh()
+    except Exception:
+        _LOGGER.exception("Initial coordinator refresh failed during setup")
+        raise
 
     hass.data[DOMAIN][entry.entry_id] = {
         "client": client,
