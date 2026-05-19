@@ -15,6 +15,7 @@ from .const import (
     CONF_CITRINEOS_OCPP16_PREFIX,
     CONF_CITRINEOS_OCPP2_PREFIX,
     CONF_CITRINEOS_STATIONS_URL,
+    CONF_MANUAL_STATIONS_JSON,
     CONF_MODE,
     CONF_POLL_SECONDS,
     CONF_SHARED_SECRET,
@@ -129,6 +130,7 @@ class CitrineConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 session,
                 base_url,
                 stations_url=user_input.get(CONF_CITRINEOS_STATIONS_URL),
+                manual_stations_json=user_input.get(CONF_MANUAL_STATIONS_JSON),
                 ocpp2_prefix=user_input[CONF_CITRINEOS_OCPP2_PREFIX],
                 ocpp16_prefix=user_input[CONF_CITRINEOS_OCPP16_PREFIX],
                 station_default_tenant_id=user_input[CONF_STATION_DEFAULT_TENANT_ID],
@@ -160,6 +162,7 @@ class CitrineConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 {
                     vol.Required(CONF_CITRINEOS_BASE_URL, default="http://localhost:8080"): str,
                     vol.Optional(CONF_CITRINEOS_STATIONS_URL): str,
+                    vol.Optional(CONF_MANUAL_STATIONS_JSON): str,
                     vol.Required(
                         CONF_CITRINEOS_OCPP2_PREFIX,
                         default=DEFAULT_CITRINEOS_OCPP2_PREFIX,
@@ -227,6 +230,13 @@ class CitrineOptionsFlow(config_entries.OptionsFlow):
                             default=current.get(
                                 CONF_CITRINEOS_STATIONS_URL,
                                 self.config_entry.data.get(CONF_CITRINEOS_STATIONS_URL, ""),
+                            ),
+                        ): str,
+                        vol.Optional(
+                            CONF_MANUAL_STATIONS_JSON,
+                            default=current.get(
+                                CONF_MANUAL_STATIONS_JSON,
+                                self.config_entry.data.get(CONF_MANUAL_STATIONS_JSON, ""),
                             ),
                         ): str,
                         vol.Required(

@@ -23,6 +23,7 @@
         "data": {
           "citrineos_base_url": "CitrineOS base URL",
           "citrineos_stations_url": "Station inventory URL (optional)",
+          "manual_stations_json": "Manual stations JSON (optional fallback)",
           "citrineos_ocpp2_prefix": "OCPP 2.0.1 API prefix",
           "citrineos_ocpp16_prefix": "OCPP 1.6 API prefix",
           "station_default_tenant_id": "Default tenant id",
@@ -48,6 +49,7 @@
           "poll_seconds": "Poll interval (seconds)",
           "citrineos_base_url": "CitrineOS base URL",
           "citrineos_stations_url": "Station inventory URL (optional)",
+          "manual_stations_json": "Manual stations JSON (optional fallback)",
           "citrineos_ocpp2_prefix": "OCPP 2.0.1 API prefix",
           "citrineos_ocpp16_prefix": "OCPP 1.6 API prefix",
           "station_default_tenant_id": "Default tenant id",

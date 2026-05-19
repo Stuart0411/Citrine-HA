@@ -14,6 +14,7 @@ from .const import (
     CONF_CITRINEOS_OCPP16_PREFIX,
     CONF_CITRINEOS_OCPP2_PREFIX,
     CONF_CITRINEOS_STATIONS_URL,
+    CONF_MANUAL_STATIONS_JSON,
     CONF_MODE,
     CONF_POLL_SECONDS,
     CONF_SHARED_SECRET,
@@ -53,6 +54,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             stations_url=entry.options.get(
                 CONF_CITRINEOS_STATIONS_URL,
                 entry.data.get(CONF_CITRINEOS_STATIONS_URL),
+            ),
+            manual_stations_json=entry.options.get(
+                CONF_MANUAL_STATIONS_JSON,
+                entry.data.get(CONF_MANUAL_STATIONS_JSON),
             ),
             ocpp2_prefix=entry.options.get(
                 CONF_CITRINEOS_OCPP2_PREFIX,

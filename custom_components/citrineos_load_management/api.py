@@ -177,6 +177,7 @@ class CitrineDirectApiClient(CitrineApiClient):
         citrineos_base_url: str,
         *,
         stations_url: str | None = None,
+        manual_stations_json: str | None = None,
         ocpp2_prefix: str = DEFAULT_CITRINEOS_OCPP2_PREFIX,
         ocpp16_prefix: str = DEFAULT_CITRINEOS_OCPP16_PREFIX,
         station_default_tenant_id: int = DEFAULT_STATION_DEFAULT_TENANT_ID,
@@ -194,6 +195,7 @@ class CitrineDirectApiClient(CitrineApiClient):
         self._station_default_protocol = station_default_protocol
         self._station_default_max_watts = station_default_max_watts
         self._station_default_weight = station_default_weight
+        self._manual_stations_json = manual_stations_json
         self._stations_cache: list[dict[str, Any]] = []
         self._state: dict[str, Any] = {
             "runtime": {
@@ -208,6 +210,12 @@ class CitrineDirectApiClient(CitrineApiClient):
         return {"status": "ok", "mode": "direct"}
 
     async def get_stations(self) -> list[dict[str, Any]]:
+        manual_stations = self._parse_manual_stations()
+        if manual_stations:
+            self._stations_cache = manual_stations
+            _LOGGER.info("Direct mode using %s manually configured stations", len(manual_stations))
+            return manual_stations
+
         attempted: list[str] = []
         last_error: str | None = None
 
@@ -235,8 +243,31 @@ class CitrineDirectApiClient(CitrineApiClient):
             "Station discovery failed. "
             f"Tried: {attempted_text}. "
             f"Last error: {last_error or 'unknown'}. "
-            "Set citrineos_stations_url to your actual CitrineOS station inventory endpoint."
+            "Set citrineos_stations_url to your actual CitrineOS station inventory endpoint "
+            "or provide manual_stations_json in integration options."
         )
+
+    def _parse_manual_stations(self) -> list[dict[str, Any]]:
+        if not isinstance(self._manual_stations_json, str):
+            return []
+
+        raw = self._manual_stations_json.strip()
+        if raw == "":
+            return []
+
+        try:
+            parsed = json.loads(raw)
+        except json.JSONDecodeError as err:
+            raise CitrineApiError(f"manual_stations_json is not valid JSON: {err}") from err
+
+        stations = self._normalize_discovered_stations(parsed)
+        if not stations:
+            raise CitrineApiError(
+                "manual_stations_json did not contain any valid stations. "
+                "Expected a JSON array of station objects, or an object with a stations/data/results array."
+            )
+
+        return stations
 
     def _station_discovery_candidates(self) -> list[str]:
         if self._user_stations_url:
@@ -245,8 +276,23 @@ class CitrineDirectApiClient(CitrineApiClient):
         return [
             f"{self._base_url}/api/v1/charging-stations",
             f"{self._base_url}/api/v1/stations",
+            f"{self._base_url}/api/v1/charging-station",
+            f"{self._base_url}/api/v1/chargepoints",
+            f"{self._base_url}/api/v1/charge-points",
+            f"{self._base_url}/api/v1/chargingStations",
+            f"{self._base_url}/api/v1/chargingStation",
+            f"{self._base_url}/api/charging-stations",
+            f"{self._base_url}/api/stations",
             f"{self._base_url}/charging-stations",
+            f"{self._base_url}/stations",
+            f"{self._base_url}/charging-station",
+            f"{self._base_url}/chargepoints",
+            f"{self._base_url}/charge-points",
             f"{self._base_url}/data/charging-stations",
+            f"{self._base_url}/data/stations",
+            f"{self._base_url}/data/charging-station",
+            f"{self._base_url}/data/chargingStations",
+            f"{self._base_url}/data/chargingStation",
         ]
 
     async def get_state(self) -> dict[str, Any]:
@@ -623,7 +669,7 @@ class CitrineDirectApiClient(CitrineApiClient):
         payload: dict[str, Any],
     ) -> dict[str, Any]:
         version = "2.0.1" if protocol == "2.0.1" else "1.6"
-        prefix = self._ocpp2_prefix if version == "2.0.1" else self._ocpp16_prefix
+        prefix = self._resolve_ocpp_prefix(version, action_path)
         endpoint = f"{self._base_url}/ocpp/{version}/{prefix}/{action_path}"
         params = {
             "identifier": station_id,
@@ -637,6 +683,17 @@ class CitrineDirectApiClient(CitrineApiClient):
             tenant_id,
         )
         return await self._request("POST", endpoint, params=params, json_payload=payload)
+
+    def _resolve_ocpp_prefix(self, version: str, action_path: str) -> str:
+        if action_path in {"requestStartTransaction", "requestStopTransaction", "remoteStartTransaction", "remoteStopTransaction"}:
+            return "evdriver"
+
+        if action_path in {"changeAvailability"}:
+            return "configuration"
+
+        if version == "2.0.1":
+            return self._ocpp2_prefix
+        return self._ocpp16_prefix
 
     def _normalize_discovered_stations(self, data: Any) -> list[dict[str, Any]]:
         station_list: list[Any] = []

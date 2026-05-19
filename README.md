@@ -228,6 +228,7 @@ Install steps:
   - Direct mode:
     - CitrineOS base URL (for example, `http://YOUR_CITRINEOS_HOST:8080`)
     - Optional station inventory URL (defaults to `/api/v1/charging-stations`)
+    - Optional manual stations JSON fallback (used when no station inventory endpoint exists)
     - OCPP module prefixes and station defaults
     - Poll interval
   - Bridge mode:
