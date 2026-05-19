@@ -10,7 +10,7 @@
       },
       "bridge": {
         "title": "Connect to Bridge",
-        "description": "Provide bridge URL and shared secret.",
+        "description": "Provide bridge URL and shared secret. Last error: {last_error}",
         "data": {
           "bridge_url": "Bridge URL",
           "shared_secret": "Webhook shared secret",
@@ -19,7 +19,7 @@
       },
       "direct": {
         "title": "Connect to CitrineOS Directly",
-        "description": "Configure direct CitrineOS connection and station defaults.",
+        "description": "Configure direct CitrineOS connection and station defaults. Last error: {last_error}",
         "data": {
           "citrineos_base_url": "CitrineOS base URL",
           "citrineos_stations_url": "Station inventory URL (optional)",

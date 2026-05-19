@@ -40,6 +40,13 @@ _LOGGER = logging.getLogger(__name__)
 class CitrineConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
+    def __init__(self) -> None:
+        self._last_error_detail = "None"
+
+    def _set_last_error_detail(self, detail: str) -> None:
+        cleaned = detail.strip() if isinstance(detail, str) else ""
+        self._last_error_detail = cleaned[:300] if cleaned else "None"
+
     async def async_step_user(self, user_input: dict[str, Any] | None = None):
         if user_input is not None:
             mode = user_input[CONF_MODE]
@@ -58,6 +65,8 @@ class CitrineConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_bridge(self, user_input: dict[str, Any] | None = None):
         errors: dict[str, str] = {}
+        if user_input is not None:
+            self._set_last_error_detail("None")
 
         if user_input is not None:
             bridge_url = user_input[CONF_BRIDGE_URL]
@@ -77,9 +86,11 @@ class CitrineConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 await client.get_stations()
             except CitrineApiError as err:
                 _LOGGER.warning("Bridge mode validation failed for %s: %s", bridge_url, err)
+                self._set_last_error_detail(str(err))
                 errors["base"] = "cannot_connect"
-            except Exception:
+            except Exception as err:
                 _LOGGER.exception("Unexpected error while validating bridge mode for %s", bridge_url)
+                self._set_last_error_detail(str(err))
                 errors["base"] = "unknown"
             else:
                 return self.async_create_entry(
@@ -99,10 +110,13 @@ class CitrineConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 }
             ),
             errors=errors,
+            description_placeholders={"last_error": self._last_error_detail},
         )
 
     async def async_step_direct(self, user_input: dict[str, Any] | None = None):
         errors: dict[str, str] = {}
+        if user_input is not None:
+            self._set_last_error_detail("None")
 
         if user_input is not None:
             base_url = user_input[CONF_CITRINEOS_BASE_URL]
@@ -128,9 +142,11 @@ class CitrineConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 await client.get_stations()
             except CitrineApiError as err:
                 _LOGGER.warning("Direct mode validation failed for %s: %s", base_url, err)
+                self._set_last_error_detail(str(err))
                 errors["base"] = "cannot_connect"
-            except Exception:
+            except Exception as err:
                 _LOGGER.exception("Unexpected error while validating direct mode for %s", base_url)
+                self._set_last_error_detail(str(err))
                 errors["base"] = "unknown"
             else:
                 return self.async_create_entry(
@@ -174,6 +190,7 @@ class CitrineConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 }
             ),
             errors=errors,
+            description_placeholders={"last_error": self._last_error_detail},
         )
 
     @staticmethod
