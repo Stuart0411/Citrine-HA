@@ -186,7 +186,8 @@ class CitrineDirectApiClient(CitrineApiClient):
     ) -> None:
         self._session = session
         self._base_url = citrineos_base_url.rstrip("/")
-        self._stations_url = (stations_url or f"{self._base_url}/api/v1/charging-stations").rstrip("/")
+        self._user_stations_url = stations_url.rstrip("/") if isinstance(stations_url, str) and stations_url else None
+        self._stations_url = self._user_stations_url or f"{self._base_url}/api/v1/charging-stations"
         self._ocpp2_prefix = ocpp2_prefix
         self._ocpp16_prefix = ocpp16_prefix
         self._station_default_tenant_id = station_default_tenant_id
@@ -207,12 +208,46 @@ class CitrineDirectApiClient(CitrineApiClient):
         return {"status": "ok", "mode": "direct"}
 
     async def get_stations(self) -> list[dict[str, Any]]:
-        response = await self._request("GET", self._stations_url)
-        payload = response.get("body", response)
-        stations = self._normalize_discovered_stations(payload)
-        self._stations_cache = stations
-        _LOGGER.info("Direct mode discovered %s stations from %s", len(stations), self._stations_url)
-        return stations
+        attempted: list[str] = []
+        last_error: str | None = None
+
+        candidates = self._station_discovery_candidates()
+        for candidate_url in candidates:
+            attempted.append(candidate_url)
+            try:
+                response = await self._request("GET", candidate_url)
+                payload = response.get("body", response)
+                stations = self._normalize_discovered_stations(payload)
+                self._stations_cache = stations
+                self._stations_url = candidate_url
+                _LOGGER.info("Direct mode discovered %s stations from %s", len(stations), candidate_url)
+                return stations
+            except CitrineApiError as err:
+                last_error = str(err)
+                # Route mismatch is common across CitrineOS deployments; try known alternatives.
+                if "status 404" in last_error and not self._user_stations_url:
+                    _LOGGER.debug("Station discovery route not found at %s; trying next candidate", candidate_url)
+                    continue
+                raise
+
+        attempted_text = ", ".join(attempted)
+        raise CitrineApiError(
+            "Station discovery failed. "
+            f"Tried: {attempted_text}. "
+            f"Last error: {last_error or 'unknown'}. "
+            "Set citrineos_stations_url to your actual CitrineOS station inventory endpoint."
+        )
+
+    def _station_discovery_candidates(self) -> list[str]:
+        if self._user_stations_url:
+            return [self._user_stations_url]
+
+        return [
+            f"{self._base_url}/api/v1/charging-stations",
+            f"{self._base_url}/api/v1/stations",
+            f"{self._base_url}/charging-stations",
+            f"{self._base_url}/data/charging-stations",
+        ]
 
     async def get_state(self) -> dict[str, Any]:
         return self._state
