@@ -1,0 +1,73 @@
+title: CitrineOS Load Management
+views:
+  - title: Operations
+    path: citrineos-load-management
+    icon: mdi:ev-station
+    cards:
+      - type: entities
+        title: Fleet Overview
+        entities:
+          - entity: sensor.station_count
+          - entity: sensor.fallback_active
+
+      - type: entities
+        title: Inputs
+        entities:
+          - entity: input_text.citrine_station_id
+          - entity: input_text.citrine_station_id_secondary
+          - entity: input_text.citrine_id_token
+          - entity: input_text.citrine_transaction_id
+          - entity: input_number.citrine_site_budget_watts
+          - entity: input_number.citrine_direct_station_watts
+          - entity: input_select.citrine_operational_status
+
+      - type: horizontal-stack
+        cards:
+          - type: button
+            name: Apply Site Budget
+            icon: mdi:transmission-tower-export
+            tap_action:
+              action: call-service
+              service: script.citrine_apply_site_budget
+          - type: button
+            name: Apply Direct Limit
+            icon: mdi:car-electric
+            tap_action:
+              action: call-service
+              service: script.citrine_apply_direct_limit
+
+      - type: horizontal-stack
+        cards:
+          - type: button
+            name: Apply 2-Station Group
+            icon: mdi:car-multiple
+            tap_action:
+              action: call-service
+              service: script.citrine_apply_simple_group_limit
+          - type: button
+            name: Reconcile
+            icon: mdi:sync
+            tap_action:
+              action: call-service
+              service: citrineos_load_management.reconcile
+
+      - type: horizontal-stack
+        cards:
+          - type: button
+            name: Remote Start
+            icon: mdi:play-circle-outline
+            tap_action:
+              action: call-service
+              service: script.citrine_remote_start
+          - type: button
+            name: Remote Stop
+            icon: mdi:stop-circle-outline
+            tap_action:
+              action: call-service
+              service: script.citrine_remote_stop
+          - type: button
+            name: Set Availability
+            icon: mdi:power-plug
+            tap_action:
+              action: call-service
+              service: script.citrine_set_availability

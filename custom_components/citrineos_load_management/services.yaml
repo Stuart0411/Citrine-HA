@@ -1,0 +1,201 @@
+apply_site_budget:
+  name: Apply Site Budget
+  description: Apply a site budget policy to the bridge.
+  fields:
+    config_entry_id:
+      name: Config Entry ID
+      description: Optional config entry id when multiple integration instances are configured.
+      selector:
+        text:
+    idempotency_key:
+      name: Idempotency Key
+      description: Optional idempotency key. Auto-generated when omitted.
+      selector:
+        text:
+    source_timestamp:
+      name: Source Timestamp
+      description: Optional ISO timestamp. Current UTC time is used when omitted.
+      selector:
+        text:
+    ttl_seconds:
+      name: TTL Seconds
+      description: Policy time-to-live in seconds.
+      default: 120
+      selector:
+        number:
+          min: 10
+          max: 3600
+          mode: box
+    site_budget_watts:
+      name: Site Budget Watts
+      description: Total site charging budget in watts.
+      required: true
+      selector:
+        number:
+          min: 0
+          mode: box
+    station_overrides:
+      name: Station Overrides
+      description: Optional list of station overrides with stationId/maxWatts keys.
+      selector:
+        object:
+
+apply_direct_limits:
+  name: Apply Direct Limits
+  description: Apply direct station and group limits to the bridge.
+  fields:
+    config_entry_id:
+      name: Config Entry ID
+      description: Optional config entry id when multiple integration instances are configured.
+      selector:
+        text:
+    idempotency_key:
+      name: Idempotency Key
+      description: Optional idempotency key. Auto-generated when omitted.
+      selector:
+        text:
+    source_timestamp:
+      name: Source Timestamp
+      description: Optional ISO timestamp. Current UTC time is used when omitted.
+      selector:
+        text:
+    ttl_seconds:
+      name: TTL Seconds
+      description: Policy time-to-live in seconds.
+      default: 120
+      selector:
+        number:
+          min: 10
+          max: 3600
+          mode: box
+    station_limits:
+      name: Station Limits
+      description: Optional list containing stationId/station_id and maxWatts/max_watts.
+      selector:
+        object:
+    groups:
+      name: Groups
+      description: Optional list containing groupId/group_id and stationIds/station_ids.
+      selector:
+        object:
+    group_limits:
+      name: Group Limits
+      description: Optional list containing groupId/group_id and maxWatts/max_watts.
+      selector:
+        object:
+    default_unspecified_watts:
+      name: Default Unspecified Watts
+      description: Optional fallback watts for stations not explicitly limited.
+      selector:
+        number:
+          min: 0
+          mode: box
+
+reconcile:
+  name: Reconcile Limits
+  description: Trigger policy reconciliation on the bridge.
+  fields:
+    config_entry_id:
+      name: Config Entry ID
+      description: Optional config entry id when multiple integration instances are configured.
+      selector:
+        text:
+
+remote_start_transaction:
+  name: Remote Start Transaction
+  description: Request a remote transaction start for a station.
+  fields:
+    config_entry_id:
+      name: Config Entry ID
+      description: Optional config entry id when multiple integration instances are configured.
+      selector:
+        text:
+    station_id:
+      name: Station ID
+      required: true
+      selector:
+        text:
+    id_token:
+      name: Id Token
+      description: Id token used as OCPP idTag/idToken.
+      required: true
+      selector:
+        text:
+    evse_id:
+      name: EVSE ID
+      description: Optional EVSE id for OCPP 2.0.1 start requests.
+      selector:
+        number:
+          min: 0
+          mode: box
+    connector_id:
+      name: Connector ID
+      description: Optional connector id for OCPP 1.6 start requests.
+      selector:
+        number:
+          min: 0
+          mode: box
+    remote_start_id:
+      name: Remote Start ID
+      description: Optional OCPP 2.0.1 remoteStartId override.
+      selector:
+        number:
+          min: 1
+          mode: box
+
+remote_stop_transaction:
+  name: Remote Stop Transaction
+  description: Request a remote transaction stop for a station.
+  fields:
+    config_entry_id:
+      name: Config Entry ID
+      description: Optional config entry id when multiple integration instances are configured.
+      selector:
+        text:
+    station_id:
+      name: Station ID
+      required: true
+      selector:
+        text:
+    transaction_id:
+      name: Transaction ID
+      required: true
+      selector:
+        text:
+
+set_availability:
+  name: Set Availability
+  description: Set charger availability to operative or inoperative.
+  fields:
+    config_entry_id:
+      name: Config Entry ID
+      description: Optional config entry id when multiple integration instances are configured.
+      selector:
+        text:
+    station_id:
+      name: Station ID
+      required: true
+      selector:
+        text:
+    operational_status:
+      name: Operational Status
+      required: true
+      selector:
+        select:
+          options:
+            - Operative
+            - Inoperative
+    evse_id:
+      name: EVSE ID
+      description: Optional EVSE id for OCPP 2.0.1 availability requests.
+      selector:
+        number:
+          min: 0
+          mode: box
+    connector_id:
+      name: Connector ID
+      description: Optional connector id for OCPP 1.6 availability requests.
+      selector:
+        number:
+          min: 0
+          mode: box

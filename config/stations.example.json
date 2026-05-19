@@ -1,0 +1,18 @@
+[
+  {
+    "stationId": "CS-2001",
+    "protocol": "2.0.1",
+    "tenantId": 1,
+    "maxWatts": 22000,
+    "weight": 2,
+    "evseId": 1
+  },
+  {
+    "stationId": "CS-1601",
+    "protocol": "1.6",
+    "tenantId": 1,
+    "maxWatts": 11000,
+    "weight": 1,
+    "connectorId": 1
+  }
+]

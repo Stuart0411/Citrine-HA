@@ -1,0 +1,31 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to CitrineOS Load Management Bridge",
+        "description": "Provide bridge URL and shared secret.",
+        "data": {
+          "bridge_url": "Bridge URL",
+          "shared_secret": "Webhook shared secret",
+          "poll_seconds": "Poll interval (seconds)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to the bridge.",
+      "unknown": "Unexpected error. Check logs."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "CitrineOS Load Management Options",
+        "data": {
+          "bridge_url": "Bridge URL",
+          "shared_secret": "Webhook shared secret",
+          "poll_seconds": "Poll interval (seconds)"
+        }
+      }
+    }
+  }
+}

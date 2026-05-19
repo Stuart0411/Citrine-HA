@@ -1,0 +1,105 @@
+input_number:
+  citrine_site_budget_watts:
+    name: Citrine Site Budget (W)
+    min: 0
+    max: 250000
+    step: 500
+    mode: box
+    unit_of_measurement: W
+    icon: mdi:lightning-bolt
+
+  citrine_direct_station_watts:
+    name: Citrine Direct Station Limit (W)
+    min: 0
+    max: 100000
+    step: 500
+    mode: box
+    unit_of_measurement: W
+    icon: mdi:ev-station
+
+input_text:
+  citrine_station_id:
+    name: Citrine Station ID
+    max: 128
+    icon: mdi:ev-station
+
+  citrine_station_id_secondary:
+    name: Citrine Secondary Station ID
+    max: 128
+    icon: mdi:ev-station
+
+  citrine_id_token:
+    name: Citrine Id Token
+    max: 64
+    icon: mdi:badge-account
+
+  citrine_transaction_id:
+    name: Citrine Transaction ID
+    max: 128
+    icon: mdi:receipt-text
+
+input_select:
+  citrine_operational_status:
+    name: Citrine Operational Status
+    options:
+      - Operative
+      - Inoperative
+    icon: mdi:transmission-tower
+
+script:
+  citrine_apply_site_budget:
+    alias: Citrine Apply Site Budget
+    sequence:
+      - service: citrineos_load_management.apply_site_budget
+        data:
+          site_budget_watts: "{{ states('input_number.citrine_site_budget_watts') | int(0) }}"
+          ttl_seconds: 120
+
+  citrine_apply_direct_limit:
+    alias: Citrine Apply Direct Limit
+    sequence:
+      - service: citrineos_load_management.apply_direct_limits
+        data:
+          ttl_seconds: 120
+          station_limits:
+            - station_id: "{{ states('input_text.citrine_station_id') }}"
+              max_watts: "{{ states('input_number.citrine_direct_station_watts') | int(0) }}"
+
+  citrine_apply_simple_group_limit:
+    alias: Citrine Apply Two-Station Group Limit
+    sequence:
+      - service: citrineos_load_management.apply_direct_limits
+        data:
+          ttl_seconds: 120
+          groups:
+            - group_id: parking-group-a
+              station_ids:
+                - "{{ states('input_text.citrine_station_id') }}"
+                - "{{ states('input_text.citrine_station_id_secondary') }}"
+          group_limits:
+            - group_id: parking-group-a
+              max_watts: "{{ states('input_number.citrine_site_budget_watts') | int(0) }}"
+
+  citrine_remote_start:
+    alias: Citrine Remote Start
+    sequence:
+      - service: citrineos_load_management.remote_start_transaction
+        data:
+          station_id: "{{ states('input_text.citrine_station_id') }}"
+          id_token: "{{ states('input_text.citrine_id_token') }}"
+
+  citrine_remote_stop:
+    alias: Citrine Remote Stop
+    sequence:
+      - service: citrineos_load_management.remote_stop_transaction
+        data:
+          station_id: "{{ states('input_text.citrine_station_id') }}"
+          transaction_id: "{{ states('input_text.citrine_transaction_id') }}"
+
+  citrine_set_availability:
+    alias: Citrine Set Availability
+    sequence:
+      - service: citrineos_load_management.set_availability
+        data:
+          station_id: "{{ states('input_text.citrine_station_id') }}"
+          operational_status: "{{ states('input_select.citrine_operational_status') }}"

@@ -1,0 +1,57 @@
+alias: Push EV site budget to CitrineOS bridge
+description: Example Home Assistant automation posting desired policy to bridge
+mode: single
+trigger:
+  - platform: time_pattern
+    minutes: "/1"
+action:
+  - service: rest_command.citrineos_site_budget
+    data:
+      idempotency_key: "{{ now().strftime('%Y%m%d%H%M') }}"
+      source_ts: "{{ now().isoformat() }}"
+      ttl_seconds: 120
+      site_budget_watts: "{{ states('input_number.ev_site_budget_watts') | int(11000) }}"
+
+# Add this rest_command block in configuration.yaml:
+# rest_command:
+#   citrineos_site_budget:
+#     url: "http://YOUR_BRIDGE_HOST:8095/api/v1/policies/site-budget"
+#     method: POST
+#     headers:
+#       content-type: application/json
+#       x-shared-secret: "replace-me"
+#     payload: >
+#       {
+#         "idempotencyKey": "{{ idempotency_key }}",
+#         "mode": "site-budget",
+#         "sourceTimestamp": "{{ source_ts }}",
+#         "ttlSeconds": {{ ttl_seconds }},
+#         "siteBudgetWatts": {{ site_budget_watts }},
+#         "stationOverrides": []
+#       }
+
+# Example direct-limits rest_command for station/group controls:
+# rest_command:
+#   citrineos_direct_limits:
+#     url: "http://YOUR_BRIDGE_HOST:8095/api/v1/policies/direct-limits"
+#     method: POST
+#     headers:
+#       content-type: application/json
+#       x-shared-secret: "replace-me"
+#     payload: >
+#       {
+#         "mode": "direct-limits",
+#         "idempotencyKey": "{{ idempotency_key }}",
+#         "sourceTimestamp": "{{ source_ts }}",
+#         "ttlSeconds": {{ ttl_seconds }},
+#         "stationLimits": [
+#           { "stationId": "CS-2001", "maxWatts": 9000 }
+#         ],
+#         "groups": [
+#           { "groupId": "parking-east", "stationIds": ["CS-2001", "CS-1601"] }
+#         ],
+#         "groupLimits": [
+#           { "groupId": "parking-east", "maxWatts": 12000 }
+#         ],
+#         "defaultUnspecifiedWatts": 6000
+#       }
